@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#b5542c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Fiszki offline">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Fiszki offline</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.svg">
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: rgba(255, 251, 245, 0.92);
+      --card: #fffdf8;
+      --text: #1d1b18;
+      --muted: #645d55;
+      --line: #d8cfc2;
+      --accent: #b5542c;
+      --accent-strong: #8f3d19;
+      --good: #2f7d43;
+      --warn: #ca8d1f;
+      --bad: #a64040;
+      --shadow: 0 18px 50px rgba(70, 46, 23, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(214, 164, 116, 0.32), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(160, 86, 54, 0.2), transparent 24%),
+        linear-gradient(135deg, #ede5d8, #f8f4ec 52%, #ebe2d4);
+    }
+
+    .app {
+      width: min(1120px, calc(100% - 32px));
+      margin: 24px auto;
+      padding: 24px;
+      border: 1px solid rgba(123, 96, 67, 0.16);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.25fr 0.9fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .hero-block,
+    .sidebar,
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255, 252, 247, 0.88);
+    }
+
+    .hero-block {
+      padding: 24px;
+    }
+
+    .top-bar {
+      margin-bottom: 20px;
+      padding: 18px 22px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .import-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .sidebar {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .sidebar h2,
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid #ece2d5;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.35rem;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 20px;
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    .modes,
+    .actions,
+    .grade-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      padding: 11px 16px;
+      font-size: 0.98rem;
+      font-family: inherit;
+      background: #fff;
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff8f2;
+    }
+
+    button.primary {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+      color: #fff8f2;
+    }
+
+    button.success {
+      background: var(--good);
+      border-color: var(--good);
+      color: #f4fff7;
+    }
+
+    button.warning {
+      background: var(--warn);
+      border-color: var(--warn);
+      color: #fffaf0;
+    }
+
+    button.danger {
+      background: var(--bad);
+      border-color: var(--bad);
+      color: #fff4f4;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .card-shell {
+      margin-top: 16px;
+      padding: 22px;
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(181, 84, 44, 0.12), rgba(255, 255, 255, 0.82) 34%),
+        var(--card);
+      border: 1px solid #e4d7c6;
+      min-height: 290px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .card-content {
+      display: grid;
+      gap: 24px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #f2e8dc;
+      color: #5b4030;
+      font-size: 0.9rem;
+    }
+
+    .card-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.82rem;
+    }
+
+    .card-text {
+      white-space: pre-wrap;
+      font-size: clamp(1.45rem, 3vw, 2.3rem);
+      line-height: 1.25;
+    }
+
+    .secondary-text {
+      color: #2a241d;
+      font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+      line-height: 1.45;
+      font-weight: 600;
+      white-space: pre-wrap;
+      margin-top: 8px;
+      padding: 20px 22px;
+      border: 1px solid #e1d2be;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #fffdf9, #f8efe3);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    }
+
+    .answer-block {
+      display: grid;
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    .answer-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.82rem;
+      margin: 0;
+    }
+
+    .test-answer {
+      width: 100%;
+      min-height: 132px;
+      resize: vertical;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+    }
+
+    .study-actions,
+    .test-actions {
+      margin-top: 8px;
+    }
+
+    .editor-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .select-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.98);
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+    }
+
+    .field-label {
+      display: block;
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .text-input,
+    .text-area {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.98);
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+    }
+
+    .text-area {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .message {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .message.error {
+      color: var(--bad);
+    }
+
+    .message.success {
+      color: var(--good);
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .list li + li {
+      margin-top: 8px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .result-box {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid #eadfce;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .app {
+        width: min(100% - 18px, 1120px);
+        margin: 10px auto;
+        padding: 14px;
+      }
+
+      .card-shell {
+        min-height: 240px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        min-height: 100dvh;
+      }
+
+      .app {
+        width: calc(100% - 12px);
+        margin: 6px auto;
+        padding: 10px;
+        border-radius: 18px;
+      }
+
+      .panel,
+      .hero-block,
+      .sidebar {
+        border-radius: 18px;
+      }
+
+      .top-bar,
+      .panel,
+      .hero-block,
+      .sidebar {
+        padding: 14px;
+      }
+
+      .hero,
+      .main {
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .card-shell {
+        margin-top: 0;
+        min-height: 0;
+        padding: 16px;
+        border-radius: 20px;
+        gap: 14px;
+      }
+
+      .card-content,
+      .answer-block {
+        gap: 14px;
+      }
+
+      .badge-row,
+      .modes,
+      .actions,
+      .grade-row,
+      .import-row {
+        gap: 8px;
+      }
+
+      .badge {
+        padding: 6px 10px;
+        font-size: 0.82rem;
+      }
+
+      .card-label,
+      .answer-label,
+      .message,
+      .small {
+        font-size: 0.88rem;
+      }
+
+      .card-text {
+        font-size: clamp(1.9rem, 9vw, 2.5rem);
+        line-height: 1.18;
+      }
+
+      .secondary-text {
+        font-size: clamp(1.2rem, 5vw, 1.55rem);
+        line-height: 1.5;
+        padding: 18px;
+      }
+
+      .test-answer {
+        min-height: 150px;
+        font-size: 1.05rem;
+        padding: 16px;
+      }
+
+      button {
+        min-height: 48px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        justify-content: center;
+      }
+
+      .modes button {
+        flex: 1 1 0;
+      }
+
+      .actions button,
+      .grade-row button,
+      .import-row button {
+        flex: 1 1 calc(50% - 8px);
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <section class="panel top-bar">
+    <h2>Tryb pracy</h2>
+    <div class="modes">
+      <button id="studyModeBtn" class="active" type="button">Nauka</button>
+      <button id="testModeBtn" type="button">Test</button>
+    </div>
+  </section>
+
+  <section class="main">
+    <div class="panel">
+      <div class="card-shell">
+        <div class="card-content">
+          <div class="badge-row">
+            <span class="badge" id="positionBadge">Fiszka 0 / 0</span>
+            <span class="badge" id="modeBadge">Tryb: nauka</span>
+            <span class="badge" id="difficultyBadge">Status: zwykla</span>
+          </div>
+          <p class="card-label" id="cardLabel">Pytanie</p>
+          <div class="card-text" id="cardText">Zestaw startowy jest gotowy do nauki.</div>
+        </div>
+
+        <div id="studySection">
+          <div class="answer-block">
+            <p class="answer-label">Odpowiedz</p>
+            <div class="secondary-text" id="studyAnswerText"></div>
+          </div>
+          <div class="actions study-actions">
+            <button id="knownBtn" class="success" type="button">Umiem</button>
+            <button id="difficultBtn" class="warning" type="button">Trudne</button>
+            <button id="nextStudyBtn" type="button">Nastepna</button>
+          </div>
+        </div>
+
+        <div id="testSection" hidden>
+          <textarea id="testAnswerInput" class="test-answer" placeholder="Wpisz odpowiedz wlasnymi slowami..."></textarea>
+          <div class="actions test-actions">
+            <button id="showExpectedBtn" class="primary" type="button">Pokaz wzorcowa odpowiedz</button>
+          </div>
+          <div class="answer-block">
+            <p class="answer-label">Wzorcowa odpowiedz</p>
+            <div class="secondary-text" id="testExpectedText" hidden></div>
+          </div>
+          <div class="grade-row">
+            <button id="markCorrectBtn" class="success" type="button">Zalicz</button>
+            <button id="markIncorrectBtn" class="danger" type="button">Blad</button>
+            <button id="nextTestBtn" type="button">Nastepne pytanie</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="result-box">
+        <h2>Wynik ostatniego testu</h2>
+        <div id="lastResult" class="small">Brak jeszcze ocenionych odpowiedzi.</div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="hero">
+    <div class="hero-block">
+      <h1>Fiszki offline</h1>
+      <div class="import-row">
+        <button id="resetProgressBtn" type="button">Wyczysc postep</button>
+      </div>
+      <p id="fileInfo" class="message"></p>
+      <p id="message" class="message"></p>
+      <div>
+        <label class="field-label" for="datasetSelect">Wbudowany zestaw</label>
+        <select id="datasetSelect" class="select-input"></select>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <div>
+        <h2>Statystyki ogolne</h2>
+        <div class="stats-grid">
+          <div class="stat">Wszystkie fiszki<strong id="totalCardsStat">0</strong></div>
+          <div class="stat">Trudne fiszki<strong id="difficultCardsStat">0</strong></div>
+          <div class="stat">Sesje nauki<strong id="studySessionsStat">0</strong></div>
+          <div class="stat">Sesje testu<strong id="testSessionsStat">0</strong></div>
+          <div class="stat">Dobra odpowiedzi<strong id="correctStat">0</strong></div>
+          <div class="stat">Bledne odpowiedzi<strong id="incorrectStat">0</strong></div>
+        </div>
+      </div>
+      <div class="result-box">
+        <h2>Stan kolejki</h2>
+        <div class="small" id="queueInfo">Trwa ladowanie zestawu.</div>
+      </div>
+    </aside>
+  </section>
+</div>
+
+<script>
+  const STORAGE_KEY = "fiszki_offline_state_v4";
+  const DATASET_CANDIDATES = Array.from({ length: 50 }, (_, index) => {
+    const number = index + 1;
+    return {
+      id: `dataset-${number}`,
+      label: `${number}.txt`,
+      path: `./${number}.txt`
+    };
+  });
+  let bundledDatasets = [];
+
+  const state = {
+    datasetId: "",
+    bundledCards: [],
+    cards: [],
+    order: [],
+    difficultQueue: [],
+    currentIndex: -1,
+    currentMode: "study",
+    studySessions: 0,
+    testSessions: 0,
+    correctAnswers: 0,
+    incorrectAnswers: 0,
+    statsByCard: {},
+    showingStudyAnswer: false,
+    showingExpectedAnswer: false,
+    lastResult: ""
+  };
+
+  const resetProgressBtn = document.getElementById("resetProgressBtn");
+  const datasetSelect = document.getElementById("datasetSelect");
+  const fileInfo = document.getElementById("fileInfo");
+  const message = document.getElementById("message");
+
+  const totalCardsStat = document.getElementById("totalCardsStat");
+  const difficultCardsStat = document.getElementById("difficultCardsStat");
+  const studySessionsStat = document.getElementById("studySessionsStat");
+  const testSessionsStat = document.getElementById("testSessionsStat");
+  const correctStat = document.getElementById("correctStat");
+  const incorrectStat = document.getElementById("incorrectStat");
+  const queueInfo = document.getElementById("queueInfo");
+
+  const studyModeBtn = document.getElementById("studyModeBtn");
+  const testModeBtn = document.getElementById("testModeBtn");
+  const positionBadge = document.getElementById("positionBadge");
+  const modeBadge = document.getElementById("modeBadge");
+  const difficultyBadge = document.getElementById("difficultyBadge");
+  const cardLabel = document.getElementById("cardLabel");
+  const cardText = document.getElementById("cardText");
+
+  const studySection = document.getElementById("studySection");
+  const studyAnswerText = document.getElementById("studyAnswerText");
+  const knownBtn = document.getElementById("knownBtn");
+  const difficultBtn = document.getElementById("difficultBtn");
+  const nextStudyBtn = document.getElementById("nextStudyBtn");
+
+  const testSection = document.getElementById("testSection");
+  const testAnswerInput = document.getElementById("testAnswerInput");
+  const showExpectedBtn = document.getElementById("showExpectedBtn");
+  const testExpectedText = document.getElementById("testExpectedText");
+  const markCorrectBtn = document.getElementById("markCorrectBtn");
+  const markIncorrectBtn = document.getElementById("markIncorrectBtn");
+  const nextTestBtn = document.getElementById("nextTestBtn");
+  const lastResult = document.getElementById("lastResult");
+
+  function shuffle(array) {
+    const copy = [...array];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function normalizeText(value) {
+    return String(value || "").replace(/\r/g, "").trim();
+  }
+
+  function parseBundledText(rawText, datasetId) {
+    return rawText
+      .split(/\n/)
+      .map(line => line.replace(/\r/g, ""))
+      .filter(line => line.trim())
+      .map((line, index) => {
+        const parts = line.split("\t");
+        if (parts.length < 2) {
+          return null;
+        }
+        const question = normalizeText(parts[0]);
+        const answer = normalizeText(parts.slice(1).join("\t"));
+        if (!question || !answer) {
+          return null;
+        }
+        return {
+          id: `${datasetId}-${index + 1}`,
+          question,
+          answer
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function loadSavedState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        return null;
+      }
+      return JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      datasetId: state.datasetId,
+      difficultQueue: state.difficultQueue,
+      currentMode: state.currentMode,
+      studySessions: state.studySessions,
+      testSessions: state.testSessions,
+      correctAnswers: state.correctAnswers,
+      incorrectAnswers: state.incorrectAnswers,
+      statsByCard: state.statsByCard,
+      lastResult: state.lastResult
+    }));
+  }
+
+  function hydrateState(saved) {
+    state.datasetId = saved?.datasetId || "";
+    state.bundledCards = [];
+    state.cards = [];
+    state.difficultQueue = Array.isArray(saved?.difficultQueue) ? saved.difficultQueue : [];
+    state.currentMode = saved?.currentMode === "test" ? "test" : "study";
+    state.studySessions = Number(saved?.studySessions || 0);
+    state.testSessions = Number(saved?.testSessions || 0);
+    state.correctAnswers = Number(saved?.correctAnswers || 0);
+    state.incorrectAnswers = Number(saved?.incorrectAnswers || 0);
+    state.statsByCard = saved?.statsByCard || {};
+    state.lastResult = saved?.lastResult || "";
+    state.order = [];
+    state.currentIndex = -1;
+  }
+
+  function rebuildStatsForCurrentCards() {
+    const knownIds = new Set(state.cards.map(card => card.id));
+    const filteredStats = {};
+    Object.entries(state.statsByCard).forEach(([cardId, value]) => {
+      if (knownIds.has(cardId)) {
+        filteredStats[cardId] = value;
+      }
+    });
+    state.statsByCard = filteredStats;
+    state.difficultQueue = state.difficultQueue.filter(cardId => knownIds.has(cardId));
+  }
+
+  function cardStats(cardId) {
+    if (!state.statsByCard[cardId]) {
+      state.statsByCard[cardId] = {
+        shown: 0,
+        known: 0,
+        difficult: 0,
+        correct: 0,
+        incorrect: 0
+      };
+    }
+    return state.statsByCard[cardId];
+  }
+
+  function difficultCount() {
+    return state.cards.filter(card => {
+      const stats = cardStats(card.id);
+      return stats.difficult > 0 || stats.incorrect > 0;
+    }).length;
+  }
+
+  function setMessage(text, kind = "") {
+    message.textContent = text;
+    message.className = kind ? `message ${kind}` : "message";
+  }
+
+  function selectedDataset() {
+    return bundledDatasets.find(dataset => dataset.id === state.datasetId) || bundledDatasets[0] || null;
+  }
+
+  async function discoverDatasets() {
+    const checks = await Promise.all(
+      DATASET_CANDIDATES.map(async dataset => {
+        try {
+          const response = await fetch(dataset.path, { method: "HEAD", cache: "no-store" });
+          return response.ok ? dataset : null;
+        } catch (error) {
+          return null;
+        }
+      })
+    );
+
+    bundledDatasets = checks.filter(Boolean);
+    datasetSelect.innerHTML = "";
+
+    bundledDatasets.forEach(dataset => {
+      const option = document.createElement("option");
+      option.value = dataset.id;
+      option.textContent = dataset.label;
+      datasetSelect.appendChild(option);
+    });
+
+    datasetSelect.disabled = bundledDatasets.length === 0;
+  }
+
+  function currentCard() {
+    if (state.currentIndex < 0 || state.currentIndex >= state.cards.length) {
+      return null;
+    }
+    return state.cards[state.currentIndex];
+  }
+
+  function rebuildOrderIfNeeded() {
+    if (state.order.length === 0) {
+      state.order = shuffle(state.cards.map(card => card.id));
+    }
+  }
+
+  function pickNextCardId() {
+    if (state.difficultQueue.length > 0) {
+      return state.difficultQueue.shift();
+    }
+
+    rebuildOrderIfNeeded();
+    const previousId = currentCard() ? currentCard().id : null;
+
+    while (state.order.length > 0) {
+      const candidateId = state.order.shift();
+      if (state.cards.length === 1 || candidateId !== previousId) {
+        return candidateId;
+      }
+      state.order.push(candidateId);
+    }
+
+    return previousId;
+  }
+
+  function moveToNextCard() {
+    if (state.cards.length === 0) {
+      state.currentIndex = -1;
+      render();
+      return;
+    }
+
+    const nextId = pickNextCardId();
+    const nextIndex = state.cards.findIndex(card => card.id === nextId);
+    state.currentIndex = nextIndex >= 0 ? nextIndex : 0;
+    state.showingStudyAnswer = true;
+    state.showingExpectedAnswer = false;
+    testAnswerInput.value = "";
+    testExpectedText.hidden = true;
+    const card = currentCard();
+    if (card) {
+      cardStats(card.id).shown += 1;
+    }
+    saveState();
+    render();
+  }
+
+  function queueDifficultReview(cardId) {
+    state.difficultQueue.push(cardId, cardId);
+  }
+
+  function markKnown() {
+    const card = currentCard();
+    if (!card) {
+      return;
+    }
+    cardStats(card.id).known += 1;
+    setMessage("Fiszka oznaczona jako opanowana.", "success");
+    moveToNextCard();
+  }
+
+  function markDifficult() {
+    const card = currentCard();
+    if (!card) {
+      return;
+    }
+    cardStats(card.id).difficult += 1;
+    queueDifficultReview(card.id);
+    setMessage("Dodano fiszke do kolejki trudnych powtorek.", "success");
+    moveToNextCard();
+  }
+
+  function markTestResult(isCorrect) {
+    const card = currentCard();
+    if (!card) {
+      return;
+    }
+
+    if (isCorrect) {
+      state.correctAnswers += 1;
+      cardStats(card.id).correct += 1;
+      state.lastResult = `Ostatni wynik: poprawna odpowiedz dla pytania "${card.question}".`;
+      setMessage("Odpowiedz zaliczona.", "success");
+    } else {
+      state.incorrectAnswers += 1;
+      cardStats(card.id).incorrect += 1;
+      cardStats(card.id).difficult += 1;
+      queueDifficultReview(card.id);
+      state.lastResult = `Ostatni wynik: bledna odpowiedz dla pytania "${card.question}".`;
+      setMessage("Odpowiedz bledna. Fiszka wroci do powtorki.", "error");
+    }
+
+    saveState();
+    render();
+  }
+
+  function showExpectedAnswer() {
+    state.showingExpectedAnswer = true;
+    render();
+  }
+
+  function switchMode(mode) {
+    if (mode !== "study" && mode !== "test") {
+      return;
+    }
+    if (state.currentMode === mode) {
+      render();
+      return;
+    }
+
+    state.currentMode = mode;
+    if (mode === "study") {
+      state.studySessions += 1;
+    } else {
+      state.testSessions += 1;
+    }
+    saveState();
+    render();
+  }
+
+  function resetProgress() {
+    state.studySessions = 0;
+    state.testSessions = 0;
+    state.correctAnswers = 0;
+    state.incorrectAnswers = 0;
+    state.statsByCard = {};
+    state.difficultQueue = [];
+    state.lastResult = "";
+    state.order = shuffle(state.cards.map(card => card.id));
+    state.currentIndex = -1;
+    moveToNextCard();
+    setMessage("Wyczyszczono postep nauki i statystyki.", "success");
+  }
+
+  async function loadBundledDataset(datasetId, keepMessage = false) {
+    const dataset = bundledDatasets.find(item => item.id === datasetId);
+    if (!dataset) {
+      state.datasetId = "";
+      state.bundledCards = [];
+      state.cards = [];
+      render();
+      setMessage("Nie znaleziono zadnego pliku od 1.txt do 50.txt w folderze Fiszki.", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch(dataset.path, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("fetch_failed");
+      }
+
+      const text = await response.text();
+      const parsedCards = parseBundledText(text, dataset.id);
+      if (parsedCards.length === 0) {
+        throw new Error("empty_dataset");
+      }
+
+      state.datasetId = dataset.id;
+      state.bundledCards = parsedCards;
+      state.cards = [...state.bundledCards];
+      rebuildStatsForCurrentCards();
+      state.order = shuffle(state.cards.map(card => card.id));
+      state.currentIndex = -1;
+      saveState();
+      moveToNextCard();
+
+      if (!keepMessage) {
+        setMessage("", "");
+      }
+    } catch (error) {
+      state.bundledCards = [];
+      state.cards = [];
+      state.order = shuffle(state.cards.map(card => card.id));
+      state.currentIndex = -1;
+      saveState();
+      render();
+      setMessage(`Nie udalo sie zaladowac pliku TXT dla zestawu "${dataset.label}".`, "error");
+    }
+  }
+
+  function render() {
+    rebuildStatsForCurrentCards();
+
+    const card = currentCard();
+    const total = state.cards.length;
+    const currentNumber = card ? state.currentIndex + 1 : 0;
+    const cardState = card ? cardStats(card.id) : null;
+    const isDifficult = cardState ? cardState.difficult > 0 || cardState.incorrect > 0 : false;
+
+    const dataset = selectedDataset();
+    fileInfo.textContent = dataset ? dataset.label : "";
+    totalCardsStat.textContent = String(total);
+    difficultCardsStat.textContent = String(difficultCount());
+    studySessionsStat.textContent = String(state.studySessions);
+    testSessionsStat.textContent = String(state.testSessions);
+    correctStat.textContent = String(state.correctAnswers);
+    incorrectStat.textContent = String(state.incorrectAnswers);
+
+    queueInfo.textContent = total === 0
+      ? "Brak fiszek. Sprawdz zestaw TXT."
+      : `W kolejce trudnych powtorek: ${state.difficultQueue.length}. Pozostale pytania w biezacym tasowaniu: ${state.order.length}.`;
+
+    positionBadge.textContent = `Fiszka ${currentNumber} / ${total}`;
+    modeBadge.textContent = `Tryb: ${state.currentMode === "study" ? "nauka" : "test"}`;
+    difficultyBadge.textContent = `Status: ${isDifficult ? "trudna" : "zwykla"}`;
+
+    studyModeBtn.classList.toggle("active", state.currentMode === "study");
+    testModeBtn.classList.toggle("active", state.currentMode === "test");
+    studySection.hidden = state.currentMode !== "study";
+    testSection.hidden = state.currentMode !== "test";
+    lastResult.textContent = state.lastResult || "Brak jeszcze ocenionych odpowiedzi.";
+
+    if (!card) {
+      cardLabel.textContent = "Pytanie";
+      cardText.textContent = "Trwa ladowanie zestawu albo brak poprawnych fiszek.";
+      studyAnswerText.textContent = "";
+      testExpectedText.textContent = "";
+      knownBtn.disabled = true;
+      difficultBtn.disabled = true;
+      nextStudyBtn.disabled = true;
+      showExpectedBtn.disabled = true;
+      markCorrectBtn.disabled = true;
+      markIncorrectBtn.disabled = true;
+      nextTestBtn.disabled = true;
+      return;
+    }
+
+    cardLabel.textContent = "Pytanie";
+    cardText.textContent = card.question;
+    studyAnswerText.textContent = card.answer;
+    testExpectedText.textContent = `Wzorcowa odpowiedz:\n${card.answer}`;
+    testExpectedText.hidden = !state.showingExpectedAnswer;
+
+    knownBtn.disabled = false;
+    difficultBtn.disabled = false;
+    nextStudyBtn.disabled = false;
+    showExpectedBtn.disabled = false;
+    markCorrectBtn.disabled = false;
+    markIncorrectBtn.disabled = false;
+    nextTestBtn.disabled = false;
+  }
+
+  resetProgressBtn.addEventListener("click", resetProgress);
+  datasetSelect.addEventListener("change", async event => {
+    await loadBundledDataset(event.target.value);
+  });
+  studyModeBtn.addEventListener("click", () => switchMode("study"));
+  testModeBtn.addEventListener("click", () => switchMode("test"));
+  knownBtn.addEventListener("click", markKnown);
+  difficultBtn.addEventListener("click", markDifficult);
+  nextStudyBtn.addEventListener("click", moveToNextCard);
+  showExpectedBtn.addEventListener("click", showExpectedAnswer);
+  markCorrectBtn.addEventListener("click", () => markTestResult(true));
+  markIncorrectBtn.addEventListener("click", () => markTestResult(false));
+  nextTestBtn.addEventListener("click", moveToNextCard);
+
+  hydrateState(loadSavedState());
+  discoverDatasets().then(async () => {
+    const initialDataset = bundledDatasets.find(dataset => dataset.id === state.datasetId) || bundledDatasets[0];
+    if (!initialDataset) {
+      render();
+      setMessage("Dodaj do folderu Fiszki plik 1.txt, 2.txt lub kolejny do 50.txt.", "error");
+      return;
+    }
+
+    state.datasetId = initialDataset.id;
+    datasetSelect.value = state.datasetId;
+    await loadBundledDataset(state.datasetId, true);
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
